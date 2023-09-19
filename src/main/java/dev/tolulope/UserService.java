@@ -44,7 +44,7 @@ public class UserService {
     public APIGatewayProxyResponseEvent getUserID(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         try{
             initDynamoDB();
-            String userId = apiGatewayRequest.getPathParameters().get("userid");
+            String userId = apiGatewayRequest.getPathParameters().get("userId");
             User user = dynamoDBMapper.load(User.class, userId);
             if(user != null){
                 jsonBody = Utility.convertObjToString(user, context);
@@ -80,7 +80,7 @@ public class UserService {
     public APIGatewayProxyResponseEvent deleteUserById(APIGatewayProxyRequestEvent apiGatewayRequest, Context context){
         try{
             initDynamoDB();
-            String userId = apiGatewayRequest.getPathParameters().get("userid");
+            String userId = apiGatewayRequest.getPathParameters().get("userId");
             User user =  dynamoDBMapper.load(User.class, userId)  ;
             if(user!=null) {
                 dynamoDBMapper.delete(user);

@@ -36,3 +36,5 @@ build/
 
 ### Mac OS ###
 .DS_Store
+/.idea/aws.xml
+/src/main/ER diagram for user management.pdf

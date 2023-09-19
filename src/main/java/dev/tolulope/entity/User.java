@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @DynamoDBTable(tableName = "usermanagement")
 public class User {
-    @DynamoDBHashKey(attributeName = "userId")
+    @DynamoDBHashKey(attributeName = "userid")
     private String userId;
     @DynamoDBAttribute(attributeName = "username")
     private String username;
@@ -69,15 +69,4 @@ public class User {
         this.userId = userId;
     }
 
-    @Override
-    public String toString() {
-        return "User{" +
-                "userId=" + userId +
-                ", username='" + username + '\'' +
-                ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                '}';
-    }
 }

@@ -1,0 +1,36 @@
+# User Management System Example in PCL
+
+# Define user variables
+var userId = 123
+var username = "john_doe"
+var email = "john@example.com"
+
+# Create a new user
+if (userExists(userId)) {
+    display "User already exists with ID " + userId
+} else {
+    createUser(userId, username, email)
+    display "User created with ID " + userId
+}
+
+# Retrieve user information
+var user = getUser(userId)
+if (user != null) {
+    display "User Information:"
+    display "User ID: " + user.userId
+    display "Username: " + user.username
+    display "Email: " + user.email
+} else {
+    display "User not found with ID " + userId
+}
+
+# Update user information
+var newUsername = "johndoe123"
+updateUser(userId, newUsername, email)
+display "User information updated for ID " + userId
+
+# Delete user
+deleteUser(userId)
+display "User with ID " + userId + " deleted"
+
+# End of the script

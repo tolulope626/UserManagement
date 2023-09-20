@@ -42,7 +42,7 @@ public class UserService {
     public APIGatewayProxyResponseEvent getUserID(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         try{
             initDynamoDB();
-            String userId = apiGatewayRequest.getPathParameters().get("userId");
+            String userId = apiGatewayRequest.getPathParameters().get("userid");
             User user = dynamoDBMapper.load(User.class, userId);
 
             if(user != null){
@@ -81,7 +81,7 @@ public class UserService {
     public APIGatewayProxyResponseEvent deleteUserById(APIGatewayProxyRequestEvent apiGatewayRequest, Context context){
         try{
             initDynamoDB();
-            String userId = apiGatewayRequest.getPathParameters().get("userId");
+            String userId = apiGatewayRequest.getPathParameters().get("userid");
             User user =  dynamoDBMapper.load(User.class, userId)  ;
             if(user!=null) {
                 dynamoDBMapper.delete(user);
@@ -105,31 +105,40 @@ public class UserService {
             // Retrieve the existing user from DynamoDB
             User existingUser = dynamoDBMapper.load(User.class, userId);
 
-            if (existingUser == null) {
-                return createAPIResponse("User not found: " + userId, 404, Utility.createHeaders());
+            if (existingUser != null) {
+                // Parse the request body into a User object with updated information
+                User updatedUser = Utility.convertStringToObj(apiGatewayRequest.getBody(), context);
+
+                if (updatedUser != null) {
+                    // Update user attributes only if provided in the request
+                    if (updatedUser.getUsername() != null) {
+                        existingUser.setUsername(updatedUser.getUsername());
+                    }
+                    if (updatedUser.getPassword() != null) {
+                        existingUser.setPassword(updatedUser.getPassword());
+                    }
+                    if (updatedUser.getEmail() != null) {
+                        existingUser.setEmail(updatedUser.getEmail());
+                    }
+                    if (updatedUser.getFirstName() != null) {
+                        existingUser.setFirstName(updatedUser.getFirstName());
+                    }
+                    if (updatedUser.getLastName() != null) {
+                        existingUser.setLastName(updatedUser.getLastName());
+                    }
+
+                    // Save the updated user to DynamoDB
+                    dynamoDBMapper.save(existingUser);
+
+                    jsonBody = Utility.convertObjToString(existingUser, context);
+                    context.getLogger().log("Updated User By ID: " + jsonBody);
+                    return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+                } else {
+                    return createAPIResponse("Invalid User data", 400, Utility.createHeaders());
+                }
+            } else {
+                return createAPIResponse("User not Found to Update: " + userId, 400, Utility.createHeaders());
             }
-
-            // Parse the request body into a User object with updated information
-            User updatedUser = Utility.convertStringToObj(apiGatewayRequest.getBody(), context);
-
-            // Validate the updated user data
-            if (!isValidUser(updatedUser)) {
-                return createAPIResponse("Invalid User data", 400, Utility.createHeaders());
-            }
-
-            // Update the user's information
-            existingUser.setUsername(updatedUser.getUsername());
-            existingUser.setPassword(updatedUser.getPassword());
-            existingUser.setEmail(updatedUser.getEmail());
-            existingUser.setFirstName(updatedUser.getFirstName());
-            existingUser.setLastName(updatedUser.getLastName());
-
-            // Save the updated user to DynamoDB
-            dynamoDBMapper.save(existingUser);
-
-            jsonBody = Utility.convertObjToString(existingUser, context);
-            context.getLogger().log("Updated User By ID: " + jsonBody);
-            return createAPIResponse(jsonBody, 200, Utility.createHeaders());
         } catch (Exception e){
             return createAPIResponse("Error Updating user", 500, Utility.createHeaders());
         }

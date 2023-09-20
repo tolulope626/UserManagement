@@ -23,12 +23,10 @@ public class UserService {
             initDynamoDB();
             User user = Utility.convertStringToObj(apiGatewayRequest.getBody(), context);
             // validating parameters
-            /*
-            if(user.getFirstName() == null || user.getLastName() == null
-                    || user.getPassword() == null || user.getEmail() == null || user.getUsername() == null){
+
+            if(!isValidUser(user)){
                 return createAPIResponse("Invalid User data", 400,Utility.createHeaders());
             }
-            */
 
             dynamoDBMapper.save(user);
             jsonBody = Utility.convertObjToString(user, context);
@@ -46,17 +44,20 @@ public class UserService {
             initDynamoDB();
             String userId = apiGatewayRequest.getPathParameters().get("userId");
             User user = dynamoDBMapper.load(User.class, userId);
+
             if(user != null){
                 jsonBody = Utility.convertObjToString(user, context);
-                context.getLogger().log("Getting User By ID:::"+ jsonBody);
+                context.getLogger().log("Got User By ID: " + jsonBody);
                 return createAPIResponse(jsonBody, 200, Utility.createHeaders());
             }else{
                 jsonBody = "User not Found :" + userId;
-                return createAPIResponse(jsonBody, 400, Utility.createHeaders());
+                context.getLogger().log("User not found: " + userId);
+                return createAPIResponse(jsonBody, 404, Utility.createHeaders());
 
             }
 
         } catch (Exception e){
+            context.getLogger().log("Error fetching user: " + e.getMessage());
             return createAPIResponse("Error fetching user", 500, Utility.createHeaders());
         }
 
@@ -88,7 +89,7 @@ public class UserService {
                 return createAPIResponse("User deleted successfully." + userId,200,Utility.createHeaders());
             }else{
                 jsonBody = "User Not Found :" + userId;
-                return createAPIResponse(jsonBody,400,Utility.createHeaders());
+                return createAPIResponse(jsonBody,404,Utility.createHeaders());
             }
         }catch (Exception e){
             return createAPIResponse("Error Deleting User",500,Utility.createHeaders());
@@ -101,34 +102,34 @@ public class UserService {
         try{
             initDynamoDB();
             String userId = apiGatewayRequest.getPathParameters().get("userid");
-            User user = dynamoDBMapper.load(User.class, userId);
-            // checks if user exists
-            if(user != null){
-                jsonBody = Utility.convertObjToString(user, context);
+            // Retrieve the existing user from DynamoDB
+            User existingUser = dynamoDBMapper.load(User.class, userId);
 
-                User newuser = Utility.convertStringToObj(apiGatewayRequest.getBody(), context);
-                /*
-                if(newuser == null || newuser.getFirstName() == null
-                        || user.getLastName() == null || user.getPassword() == null
-                        || user.getEmail() == null || user.getUsername() == null){
-                    return createAPIResponse("Invalid User data", 400,Utility.createHeaders());
-                }
-                **/
-                user.setUsername(newuser.getUsername());
-                user.setPassword(newuser.getPassword());
-                user.setEmail(newuser.getEmail());
-                user.setFirstName(newuser.getFirstName());
-                user.setLastName(newuser.getLastName());
-
-                dynamoDBMapper.save(user);
-                jsonBody = Utility.convertObjToString(user, context);
-                context.getLogger().log("Updated User By ID:::"+ jsonBody);
-                return createAPIResponse(jsonBody, 200, Utility.createHeaders());
-            }else{
-                jsonBody = "User not Found to Update:" + userId;
-                return createAPIResponse(jsonBody, 400, Utility.createHeaders());
+            if (existingUser == null) {
+                return createAPIResponse("User not found: " + userId, 404, Utility.createHeaders());
             }
 
+            // Parse the request body into a User object with updated information
+            User updatedUser = Utility.convertStringToObj(apiGatewayRequest.getBody(), context);
+
+            // Validate the updated user data
+            if (!isValidUser(updatedUser)) {
+                return createAPIResponse("Invalid User data", 400, Utility.createHeaders());
+            }
+
+            // Update the user's information
+            existingUser.setUsername(updatedUser.getUsername());
+            existingUser.setPassword(updatedUser.getPassword());
+            existingUser.setEmail(updatedUser.getEmail());
+            existingUser.setFirstName(updatedUser.getFirstName());
+            existingUser.setLastName(updatedUser.getLastName());
+
+            // Save the updated user to DynamoDB
+            dynamoDBMapper.save(existingUser);
+
+            jsonBody = Utility.convertObjToString(existingUser, context);
+            context.getLogger().log("Updated User By ID: " + jsonBody);
+            return createAPIResponse(jsonBody, 200, Utility.createHeaders());
         } catch (Exception e){
             return createAPIResponse("Error Updating user", 500, Utility.createHeaders());
         }
@@ -148,6 +149,13 @@ public class UserService {
         responseEvent.setStatusCode(statusCode);
         return responseEvent;
     }
-
-
+    // Helper method to validate user inputs
+    private boolean isValidUser(User user) {
+        return user != null &&
+                user.getFirstName() != null &&
+                user.getLastName() != null &&
+                user.getPassword() != null &&
+                user.getEmail() != null &&
+                user.getUsername() != null;
+    }
 }
